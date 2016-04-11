@@ -1,5 +1,20 @@
 #include "syntax_tree.h"
 
+XMLGenerator xml;
+
+void displayList(string wrapper_tag, Node*  node) {
+	xml.openTag(wrapper_tag);
+
+	while (node != NULL) {
+		node->display();
+		
+		node = node->next;
+	}
+
+	xml.closeTag();
+}
+
+// Node methods
 Node::Node(string symbol) {
 	this->symbol = symbol;
 
@@ -10,55 +25,45 @@ Node::~Node() {
 	delete(this->next);
 }
 
-void Node::display() {
-	cout << this->symbol;
-}
+void Node::display() {}
 
+// DataType methods
 DataType::DataType(string symbol) 
 		: Node(symbol) {}
 
+void DataType::display() {
+	xml.oneLineTag("type", this->symbol);
+}
+
+// Statement methods
 Statement::Statement(string symbol) 
 		: Node (symbol) {}
 
-void displayStatements(Node *statement) {
-	while (statement != NULL) {
-		statement->display();
-		cout << endl;
-
-		statement = statement->next;
-	}
-}
-
+// Expression methods
 Expression::Expression(string symbol) 
 		: Statement(symbol) {}
 
+// Expression methods
 Identifier::Identifier(string symbol) 
 		: Expression(symbol) {}
 
+// Identifier methods
+void Identifier::display() {
+	xml.oneLineTag("id", this->symbol);
+}
+
+// Integer methods
 Integer::Integer(string symbol) 
 		: Expression(symbol) {}
 
-AssignmentExpression::AssignmentExpression(Identifier *id, Expression *expr) 
-		: Expression("=") {
-	this->id = id;
-	this->expr = expr;
+void Integer::display() {
+	xml.oneLineTag("integer", this->symbol);
 }
 
-AssignmentExpression::~AssignmentExpression() {
-	delete(this->id);
-	delete(this->expr);
-}
-
-void AssignmentExpression::display() {
-	this->id->display();
-	cout << " ";
-	Node::display();
-	cout << " ";
-	this->expr->display();
-}
-
+// BinaryExpression methods
 BinaryExpression::BinaryExpression(string op, Expression *left, Expression *right) 
-		: Expression(op){
+		: Expression("") {
+	this->op = op;
 	this->left = left;
 	this->right = right;
 }
@@ -69,15 +74,16 @@ BinaryExpression::~BinaryExpression() {
 }
 
 void BinaryExpression::display() {
+	xml.openTag("binary-expression", this->op);
 	this->left->display();
-	cout << " ";
-	Node::display();
-	cout << " ";
 	this->right->display();
+	xml.closeTag();
 }
 
-UnaryExpression::UnaryExpression(string symbol, Expression* expr)
-		: Expression(symbol) {
+// UnaryExpression methods
+UnaryExpression::UnaryExpression(string op, Expression* expr)
+		: Expression("") {
+	this->op = op;
 	this->expr = expr;
 }
 
@@ -86,11 +92,31 @@ UnaryExpression::~UnaryExpression() {
 }
 
 void UnaryExpression::display() {
-	Node::display();
-	cout << " ";
+	xml.openTag("unary-expression", this->op);
 	this->expr->display();
+	xml.closeTag();
 }
 
+// FunctionCall methods
+FunctionCall::FunctionCall(Identifier *id, Expression *args) 
+		: Expression("") {
+	this->id = id;
+	this->args = args;
+}
+
+FunctionCall::~FunctionCall() {
+	delete(id);
+	delete(args);
+}
+
+void FunctionCall::display() {
+	xml.openTag("function-call");
+	this->id->display();
+	displayList("argument-list", this->args);
+	xml.closeTag();
+}
+
+// IfStatement methods
 IfStatement::IfStatement(Expression *exp, Statement *statement, Statement *elseStatement)
 		: Statement("") {
 	this->exp = exp;
@@ -105,19 +131,14 @@ IfStatement::~IfStatement() {
 }
 
 void IfStatement::display() {
-	cout << "if (";
+	xml.openTag("if");
 	this->exp->display();
-	cout << ") {" << endl;
-	displayStatements(this->statement);
-	cout << "}" << endl;
-	
-	if (this->elseStatement) {
-		cout << "else {" << endl;
-		displayStatements(this->elseStatement);
-		cout << "}" << endl;
-	}
+	displayList("block", this->statement);
+	displayList("else-block", this->elseStatement);
+	xml.closeTag();
 }
 
+// WhileStatement methods
 WhileStatement::WhileStatement(Expression *exp, Statement *statement) 
 		: Statement("") {
 	this->exp = exp;
@@ -130,24 +151,24 @@ WhileStatement::~WhileStatement() {
 }
 
 void WhileStatement::display() {
-	cout << "while (";
+	xml.openTag("while");
 	this->exp->display();
-	cout << ") {" << endl;
-	displayStatements(this->statement);
-	cout << "}" << endl;
+	displayList("block", this->statement);
+	xml.closeTag();
 }
 
+// DoWhileStatement methods
 DoWhileStatement::DoWhileStatement(Statement *statement, Expression *exp)
 		: WhileStatement(exp, statement) {}
 
 void DoWhileStatement::display() {
-	cout << "do {" << endl;
-	displayStatements(this->statement);
-	cout << "} while (";
+	xml.openTag("do-while");
+	displayList("block", this->statement);
 	this->exp->display();
-	cout << ")" << endl;
+	xml.closeTag();
 }
 
+// ReturnStatement methods
 ReturnStatement::ReturnStatement(Expression *exp)
 		: Statement("") {
 	this->exp = exp;
@@ -158,11 +179,12 @@ ReturnStatement::~ReturnStatement() {
 }
 
 void ReturnStatement::display() {
-	cout << "return ";
-	this->exp->display();
-	cout << endl;
+	xml.openTag("return");
+	if (this->exp) this->exp->display();
+	xml.closeTag();
 }
 
+// ForStatement methods
 ForStatement::ForStatement(Expression *initializer, Expression *condition, Expression *step, Statement *statement) 
 		: Statement("") {
 	this->initializer = initializer;
@@ -179,48 +201,60 @@ ForStatement::~ForStatement() {
 }
 
 void ForStatement::display() {
-	cout << "for (";
-	this->initializer->display();
-	cout << ";";
-	this->condition->display();
-	cout << ";";
-	this->step->display();
-	cout << ") {" << endl;
-	displayStatements(this->statement);
-	cout << "}" << endl;
+	xml.openTag("for");
+	if (this->initializer) this->initializer->display();
+	if (this->condition) this->condition->display();
+	if (this->step) this->step->display();
+	displayList("block", this->statement);
+	xml.closeTag();
 }
 
-Declarator::Declarator(Identifier *id, Parameter *param, Expression *exp) 
+// Declarator methods
+Declarator::Declarator(Identifier *id) 
 		: Node("") {
 	this->id = id;
-	this->param = param;
-	this->exp = exp;
 }
 
 Declarator::~Declarator() {
 	delete(this->id);
-	delete(this->param);
-	delete(this->exp);
 }
 
-void Declarator::display() {
+// VariableDeclarator methods
+VariableDeclarator::VariableDeclarator(Identifier *id, Expression *init)
+		: Declarator(id) {
+	this->init = init;
+}
+
+VariableDeclarator::~VariableDeclarator() {
+	delete(this->init);
+}
+
+void VariableDeclarator::display() {
+	xml.openTag("variable-declarator");
 	this->id->display();
-
-	if (this->param) {
-		cout << " (";
-		this->display();
-		cout << ")";
-	} else if (this->exp) {
-		cout << " = ";
-		this->display();
-	}
-
-	if (this->next) {
-		cout << ", ";
-		this->next->display();
-	}
+	if (this->init) this->init->display();
+	xml.closeTag();
 }
 
+// FunctionDeclarator methods
+FunctionDeclarator::FunctionDeclarator(Identifier *id, Parameter *params)
+		: Declarator(id) {
+
+	this->params = params;
+}
+
+FunctionDeclarator::~FunctionDeclarator() {
+	delete(this->params);
+}
+
+void FunctionDeclarator::display() {
+	xml.openTag("function-declarator");
+	this->id->display();
+	displayList("parameter-list", this->params);
+	xml.closeTag();
+}
+
+// Parameter methods
 Parameter::Parameter(DataType *type, Identifier *id) 
 		: Node("") {
 	this->type = type;
@@ -233,26 +267,17 @@ Parameter::~Parameter() {
 }
 
 void Parameter::display() {
+	xml.openTag("parameter");
 	this->type->display();
-	cout << " ";
 	this->id->display();
-
-	if (this->next) {
-		cout << ", ";
-		this->next->display();
-	}
+	xml.closeTag();
 }
 
+// Declaration methods
 Declaration::Declaration(DataType *type, Declarator *declarator)
-		: Node("") {
+		: Statement("") {
 	this->type = type;
 	this->declarator = declarator;
-}
-
-void Declaration::display() {
-	this->type->display();
-	cout << " ";
-	this->declarator->display();
 }
 
 Declaration::~Declaration() {
@@ -260,6 +285,14 @@ Declaration::~Declaration() {
 	delete(this->declarator);
 }
 
+void Declaration::display() {
+	xml.openTag("declaration");
+	this->type->display();
+	displayList("declarator-list", this->declarator);
+	xml.closeTag();
+}
+
+// FunctionDefinition methods
 FunctionDefinition::FunctionDefinition(DataType *type, Identifier *id, Parameter *param, Statement *statement)
 		: Node("") { 
 
@@ -269,20 +302,18 @@ FunctionDefinition::FunctionDefinition(DataType *type, Identifier *id, Parameter
 	this->statement = statement;
 }
 
-void FunctionDefinition::display() {
-	this->type->display();
-	cout << " ";
-	this->id->display();
-	cout << "(";
-	this->param->display();
-	cout << ") {" << endl;
-	displayStatements(this->statement);
-	cout << "}" << endl;
-}
-
 FunctionDefinition::~FunctionDefinition() {
 	delete(this->type);
 	delete(this->id);
 	delete(this->param);
 	delete(this->statement);
+}
+
+void FunctionDefinition::display() {
+	xml.openTag("function-definition");
+	this->type->display();
+	this->id->display();
+	displayList("parameter-list", this->param);
+	displayList("block", this->statement);
+	xml.closeTag();
 }

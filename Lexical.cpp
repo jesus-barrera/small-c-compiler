@@ -145,7 +145,6 @@ bool Token::is(string symbol) {
 }
 
 Lexical::Lexical(string file_name) {
-	cout << "size: " << sizeof(reserved_words) << endl;
 	input.open(file_name.c_str());
 
 	if (!input.is_open()) {

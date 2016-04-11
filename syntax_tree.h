@@ -1,10 +1,15 @@
-#ifndef _SYNTAX_TREE_H
+#ifndef _SYNTAX_TREE_H_INCLUDED_
 
-#define _SYNTAX_TREE_H
+#define _SYNTAX_TREE_H_INCLUDED_
+
 #include <iostream>
 #include <string>
 
+#include "XMLGenerator.h"
+
 using namespace std;
+
+extern XMLGenerator xml;
 
 class Node {
 public:
@@ -19,6 +24,8 @@ public:
 class DataType: public Node {
 public:
 	DataType(string symbol);
+
+	void display();
 };
 
 class Statement: public Node {
@@ -34,26 +41,20 @@ public:
 class Identifier: public Expression {
 public:
 	Identifier(string symbol);
+
+	void display();
 };
 
 class Integer: public Expression {
 public:
 	Integer(string symbol);
-};
-
-class AssignmentExpression: public Expression {
-public:
-	Identifier *id;
-	Expression *expr;
-
-	AssignmentExpression(Identifier *id, Expression *expr);
-	~AssignmentExpression();
 
 	void display();
 };
 
 class BinaryExpression: public Expression {
 public:
+	string op;
 	Expression *left;
 	Expression *right;
 
@@ -65,11 +66,22 @@ public:
 
 class UnaryExpression: public Expression {
 public:
+	string op;
 	Expression *expr;
 
-	UnaryExpression(string op, Expression* expr);
+	UnaryExpression(string op, Expression *expr);
 	~UnaryExpression();
 
+	void display();
+};
+
+class FunctionCall: public Expression {
+public:
+	Identifier *id;
+	Expression *args;
+
+	FunctionCall(Identifier *id, Expression *args);
+	~FunctionCall();
 	void display();
 };
 
@@ -140,16 +152,31 @@ public:
 class Declarator: public Node {
 public:
 	Identifier *id;
-	Parameter *param; // In case of function declaration
-	Expression *exp; // In case of variable initialization
-
-	Declarator(Identifier *id, Parameter *param = NULL, Expression *exp = NULL);
+	Declarator(Identifier *id);
 	~Declarator();
+};
+
+class VariableDeclarator: public Declarator {
+public:
+	Expression *init;
+
+	VariableDeclarator(Identifier *id, Expression *initializer);
+	~VariableDeclarator();
 
 	void display();
 };
 
-class Declaration: public Node {
+class FunctionDeclarator: public Declarator {
+public:
+	Parameter *params;
+
+	FunctionDeclarator(Identifier *id, Parameter *params);
+	~FunctionDeclarator();
+
+	void display();
+};
+
+class Declaration: public Statement {
 public:
 	DataType *type;
 	Declarator *declarator;

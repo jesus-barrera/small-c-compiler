@@ -7,145 +7,258 @@ Syntax::Syntax(list<Token *> *tkn_stream) {
 void Syntax::analyze() {
 	nextToken();
 	
-	externalDeclaration();
+	tree = externalDeclaration();
 
 	match(TKN_EOF);
 }
 
-void Syntax::externalDeclaration() {
+Node *Syntax::externalDeclaration() {
+	Node *node = NULL;
+	DataType *type = NULL;
+	Identifier *identifier = NULL;
+
 	if (lookahead.is("void") || lookahead.is("int")) {
-		typeEspecifier();
+		type = typeEspecifier();
+		identifier = new Identifier(lookahead.symbol);
 		match(TKN_IDENTIFIER);
-		declaration();
-		externalDeclaration();
+		node = declaration(type, identifier);
+		node->next = externalDeclaration();
 	}
+
+	return node;
 }
 
-void Syntax::declaration() {
+Node *Syntax::declaration(DataType *type, Identifier *identifier) {
+	Node *node = NULL;
+	Declarator *declarator = NULL;
+
 	if (lookahead.is("=")) {
+		Expression *init = NULL;
+
 		match("=");
-		assignmentExpression();
-		declaratorList();
+		init = assignmentExpression();
+		declarator = new VariableDeclarator(identifier, init);
+		declarator->next = declaratorList();
 		match(";");
+
+		node = new Declaration(type, declarator); 
 	} else if (lookahead.is("(")) {
+		Parameter *param;
+
 		match("("); 
-		parameterList(); 
+		param = parameterList(); 
 		match(")");
-		functionDefinition();
+		
+		node = functionDefinition(type, identifier, param);
 	} else {
-		declaratorList();
+		declarator = new VariableDeclarator(identifier, NULL);
+		declarator->next = declaratorList();
 		match(";");
+
+		node = new Declaration(type, declarator);
 	}
+
+	return node;
 }
 
-void Syntax::declaratorList() {
-	if (lookahead.is(",")) {
+Declarator *Syntax::declaratorList() {
+	Declarator *node = NULL;
+	
+	if (lookahead.is(",")) {		
 		match(",");
-		match(TKN_IDENTIFIER);
-		declarator();
-		declaratorList();
+		node = declarator();
+		node->next = declaratorList();
 	}
+
+	return node;
 }
 
-void Syntax::declarator() {
-	if (lookahead.is("=")) {
-		match("=");
-		assignmentExpression();
-	} else if (lookahead.is("(")) {
+Declarator *Syntax::declarator() {
+	Declarator *node = NULL;
+	Identifier *identifier = NULL;
+
+	identifier = new Identifier(lookahead.symbol);
+	match(TKN_IDENTIFIER);
+
+	if (lookahead.is("(")) {
+		Parameter *params;
+
 		match("(");
-		parameterList();
+		params = parameterList();
 		match(")");	
-	}
-}
 
-void Syntax::functionDefinition() {
-	if (lookahead.is("{")) {
-		compoundStatement();
+		node = new FunctionDeclarator(identifier, params);
 	} else {
-		declaratorList();
-		match(";");
+		Expression *init = NULL;
+
+		if (lookahead.is("=")) {
+			match("=");
+			init = assignmentExpression();
+		}
+
+		node = new VariableDeclarator(identifier, init);
 	}
+
+	return node;
 }
 
-void Syntax::typeEspecifier() {
+Node *Syntax::functionDefinition(DataType *type, Identifier *identifier, Parameter *param) {
+	Node *node = NULL;
+
+	if (lookahead.is("{")) {
+		Statement *statement = compoundStatement();
+
+		node = new FunctionDefinition(type, identifier, param, statement);
+	} else {
+		FunctionDeclarator *declarator = new FunctionDeclarator(identifier, param);
+
+		declarator->next = declaratorList();
+		match(";");
+
+		node = new Declaration(type, declarator);
+	}
+
+	return node;
+}
+
+DataType *Syntax::typeEspecifier() {
+	DataType *node = NULL;
+
+	node = new DataType(lookahead.symbol);
+
 	if (lookahead.is("int")) {
 		match("int");
 	} else {
 		match("void");
 	}
+
+	return node;
 }
 
-void Syntax::parameterList() {
+Parameter *Syntax::parameterList() {
+	Parameter *node = NULL, *aux;
+
 	if (lookahead.is("void") || lookahead.is("int")) {
-		typeEspecifier();
+		DataType *type = typeEspecifier();
+		Identifier *id = new Identifier(lookahead.symbol);
+
 		match(TKN_IDENTIFIER);
+
+		node = new Parameter(type, id);
+
+		aux = node;
 
 		while (lookahead.is(",")) {
 			match(",");
 
-			typeEspecifier();
+			type = typeEspecifier();
+			id = new Identifier(lookahead.symbol);
 			match(TKN_IDENTIFIER);
+
+			aux->next = new Parameter(type, id);
+
+			aux = (Parameter *)aux->next;
 		}
 	}
+
+	return node;
 }
 
-void Syntax::statement() {
+Statement *Syntax::statement() {
+	Statement *node = NULL;
+
 	if (lookahead.is("if")) {
+		Expression *expr;
+		Statement *stm, *elseStm;
+
 		match("if");
 		match("(");
-		expression();
+		expr = expression();
 		match(")");
-		statement();
-		elseStatement();
+		stm = statement();
+		elseStm = elseStatement();
+
+		node = new IfStatement(expr, stm, elseStm);
 	} else if (lookahead.is("while")) {
+		Expression *expr;
+		Statement *stm;
+
 		match("while");
 		match("(");
-		expression();
+		expr = expression();
 		match(")");
-		statement();
+		stm = statement();
+
+		node = new WhileStatement(expr, stm);
 	} else if (lookahead.is("do")) {
+		Statement *stm;
+		Expression *expr;
+
 		match("do");
-		statement();
+		stm = statement();
 		match("while");
 		match("(");
-		expression();
+		expr = expression();
 		match(")");
 		match(";");
+
+		node = new DoWhileStatement(stm, expr);
 	} else if (lookahead.is("for")) {
+		Expression *initializer, *condition, *step;
+		Statement *stm;
+
 		match("for");
 		match("(");
-		expressionOpt();
+		initializer = expressionOpt();
 		match(";");
-		expressionOpt();
+		condition = expressionOpt();
 		match(";");
-		expressionOpt();
+		step = expressionOpt();
 		match(")");
-		statement();
+		stm = statement();
+
+		node = new ForStatement(initializer, condition, step, stm);
 	} else if (lookahead.is("void") || lookahead.is("int")) {
-		typeEspecifier();
-		match(TKN_IDENTIFIER);
-		declarator();
-		declaratorList();
+		DataType *type;
+		Declarator *dec;
+
+		type = typeEspecifier();
+		dec = declarator();
+		dec->next = declaratorList();
 		match(";");
+
+		node = new Declaration(type, dec);
 	} else if (lookahead.is("return")) {
+		Expression *expr;
+		
 		match("return");
-		expressionOpt();
+		expr = expressionOpt();
 		match(";");
+
+		node = new ReturnStatement(expr);
 	} else if (lookahead.is("{")) {
-		compoundStatement();
+		node = compoundStatement();
 	} else {
-		expressionOpt();
+		node = expressionOpt();
 		match(";");
 	}
+
+	return node;
 }
 
-void Syntax::compoundStatement() {
+Statement *Syntax::compoundStatement() {
+	Statement *node = NULL;
+
 	match("{");
-	statementList();
+	node = statementList();
 	match("}");
+
+	return node;
 }
 
-void Syntax::statementList() {
+Statement *Syntax::statementList() {
+	Statement *node = NULL;
+
 	if (lookahead.is("if") || 
 		lookahead.is("while") || 
 		lookahead.is("do") || 
@@ -157,148 +270,246 @@ void Syntax::statementList() {
 		lookahead.is(TKN_OP_ADD) ||
 		lookahead.is("(") ||
 		lookahead.is(TKN_INTEGER) ||
-		lookahead.is(TKN_IDENTIFIER)) {
+		lookahead.is(TKN_IDENTIFIER) ||
+		lookahead.is(";")) {
 	
-		statement();
-		statementList();
+		node = statement();
+
+		if (node) node->next = statementList();
 	}
+
+	return node;
 }
 
-void Syntax::elseStatement() {
+Statement *Syntax::elseStatement() {
+	Statement *node = NULL;
 	if (lookahead.is("else")) {
 		match("else");
-		statement();
+		node = statement();
 	}
+
+	return node;
 }
 
-void Syntax::expressionOpt() {
+Expression *Syntax::expressionOpt() {
+	Expression *expr = NULL;
+
 	if (lookahead.is(TKN_OP_ADD) ||
 		lookahead.is("(") ||
 		lookahead.is(TKN_INTEGER) ||
 		lookahead.is(TKN_IDENTIFIER)) {
 
-		expression();
+		expr = expression();
+
 	}
+
+	return expr;
 }
 
-void Syntax::expression() {
-	assignmentExpression();
+Expression *Syntax::expression() {
+	Expression *expr, *aux;
+
+	expr = aux = assignmentExpression();
 
 	while (lookahead.is(",")) {
 		match(",");
-		assignmentExpression();
+		aux->next = assignmentExpression();
+
+		aux = (Expression *)aux->next;
 	}
+
+	return expr;
 }
 
-void Syntax::assignmentExpression() {
+Expression *Syntax::assignmentExpression() {
+	Expression *expr = NULL;
+
 	// A second token is taken
 	if (lookahead.is(TKN_IDENTIFIER) && tkn_stream->front()->is("=")) {
+		Identifier *id;
+		Expression *aux;
+		string symbol;
+
+		id = new Identifier(lookahead.symbol);
 		match(TKN_IDENTIFIER);
+		symbol = lookahead.symbol;
 		match("=");
-		assignmentExpression();
+		aux = assignmentExpression();
+
+		expr = new BinaryExpression(symbol, id, aux);
 	} else {
-		logicalOrExpression();
+		expr = logicalOrExpression();
 	}
+
+	return expr;
 }
 
-void Syntax::logicalOrExpression() {
-	logicalAndExpression();
+Expression *Syntax::logicalOrExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = logicalAndExpression();
 
 	while (lookahead.is("||")) {
+		symbol = lookahead.symbol;
 		match("||");
-		logicalAndExpression();
+		expr = new BinaryExpression(symbol, expr, logicalAndExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::logicalAndExpression() {
-	equalityExpression();
+Expression *Syntax::logicalAndExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = equalityExpression();
 
 	while (lookahead.is("&&")) {
+		symbol = lookahead.symbol;
 		match("&&");
-		equalityExpression();
+		
+		expr = new BinaryExpression(symbol, expr, equalityExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::equalityExpression() {
-	relationalExpression();
+Expression *Syntax::equalityExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = relationalExpression();
 
 	while (lookahead.is(TKN_OP_EQUALITY)) {
+		symbol = lookahead.symbol;
 		match(TKN_OP_EQUALITY);
-		relationalExpression();
+
+		expr = new BinaryExpression(symbol, expr, relationalExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::relationalExpression() {
-	additiveExpression();
+Expression *Syntax::relationalExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = additiveExpression();
 
 	while (lookahead.is(TKN_OP_RELATIONAL)) {
+		symbol = lookahead.symbol;
 		match(TKN_OP_RELATIONAL);
-		additiveExpression();
+
+		expr = new BinaryExpression(symbol, expr, additiveExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::additiveExpression() {
-	mutiplicativeExpression();
+Expression *Syntax::additiveExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = mutiplicativeExpression();
 
 	while (lookahead.is(TKN_OP_ADD)) {
+		symbol = lookahead.symbol;
 		match(TKN_OP_ADD);
-		mutiplicativeExpression();
+
+		expr = new BinaryExpression(symbol, expr, mutiplicativeExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::mutiplicativeExpression() {
-	unaryExpression();
+Expression *Syntax::mutiplicativeExpression() {
+	Expression *expr = NULL;
+	string symbol;
+
+	expr = unaryExpression();
 
 	while (lookahead.is(TKN_OP_MULT)) {
+		symbol = lookahead.symbol;
 		match(TKN_OP_MULT);
-		unaryExpression();
+
+		expr = new BinaryExpression(symbol, expr, unaryExpression());
 	}
+
+	return expr;
 }
 
-void Syntax::unaryExpression() {
+Expression *Syntax::unaryExpression() {
+	Expression *expr = NULL;
+
 	if (lookahead.is(TKN_OP_ADD)) {
+		string op = lookahead.symbol;
+
 		match(TKN_OP_ADD);
-		unaryExpression();
+
+		expr = new UnaryExpression(op, unaryExpression());
 	} else {
-		primaryExpression();
+		expr = primaryExpression();
 	}
+
+	return expr;
 }
 
-void Syntax::primaryExpression() {
+Expression *Syntax::primaryExpression() {
+	Expression *expr = NULL;
+
 	if (lookahead.is(TKN_IDENTIFIER)) {
+		Identifier *id = new Identifier(lookahead.symbol);
 		match(TKN_IDENTIFIER);
-		functionCall();
+		expr = functionCall(id);
 	} else if (lookahead.is(TKN_INTEGER)) {
+		expr = new Integer(lookahead.symbol);
 		match(TKN_INTEGER);
 	} else {
 		match("(");
-		expression();
+		expr = expression();
 		match(")");
 	}
+
+	return expr;
 }
 
-void Syntax::functionCall() {
+Expression *Syntax::functionCall(Identifier *id) {
+	Expression *expr = id;
+
 	if (lookahead.is("(")) {
+		Expression *args;
+
 		match("(");
-		arguementList();
+		args = argumentList();
 		match(")");
+
+		expr = new FunctionCall(id, args);
 	}
+
+	return expr;
 }
 
-void Syntax::arguementList() {
+Expression *Syntax::argumentList() {
+	Expression *args = NULL, *aux;
+
 	if (lookahead.is(TKN_OP_ADD) ||
 		lookahead.is("(") ||
 		lookahead.is(TKN_INTEGER) ||
 		lookahead.is(TKN_IDENTIFIER)) {
 
-		assignmentExpression();
+		args = aux = assignmentExpression();
 
 		while (lookahead.is(",")) {
 			match(",");
-			assignmentExpression();
+			aux->next = assignmentExpression();
+
+			aux = (Expression *)aux->next;
 		}
 
 	}
+
+	return args;
 }
 
 void Syntax::match(int tkn_type) {
@@ -323,6 +534,21 @@ void Syntax::nextToken() {
 
 		tkn_stream->pop_front();
 	}
+}
+
+void Syntax::treeToXml() {
+	Node *n = tree;
+
+	xml.setoutput(&cout);
+
+	xml.openTag("program");
+	
+	while (n != NULL) {
+		n->display();
+		n = n->next;
+	}
+
+	xml.closeTag();
 }
 
 void Syntax::error(string expected) {

@@ -12,45 +12,47 @@ using namespace std;
 
 class Syntax {
 private:
-	list<Token* > *tkn_stream;
+	list<Token *> *tkn_stream;
 	Token lookahead;
-	Node* tree;
+	Node *tree;
 
 public:
 	Syntax(list<Token *> *tkn_stream);
 
 	void analyze();
 
-	void externalDeclaration();
-	void declaration();
-	void declaratorList();
-	void declarator();
-	void functionDefinition();
-	void typeEspecifier();
-	void parameterList();
-	void statement();
-	void compoundStatement();
-	void statementList();
-	void elseStatement();
-	void expressionOpt();
-	void expression();
-	void assignmentExpression();
-	void logicalOrExpression();
-	void logicalAndExpression();
-	void equalityExpression();
-	void relationalExpression() ;
-	void additiveExpression();
-	void mutiplicativeExpression();
-	void unaryExpression();
-	void primaryExpression();
-	void functionCall();
-	void arguementList();
+	Node *externalDeclaration();
+	Node *declaration(DataType *type, Identifier *identifier);
+	Declarator *declaratorList();
+	Declarator *declarator();
+	Node *functionDefinition(DataType *type, Identifier *identifier, Parameter *param);
+	DataType *typeEspecifier();
+	Parameter *parameterList();
+	Statement *statement();
+	Statement *compoundStatement();
+	Statement *statementList();
+	Statement *elseStatement();
+	Expression *expressionOpt();
+	Expression *expression();
+	Expression *assignmentExpression();
+	Expression *logicalOrExpression();
+	Expression *logicalAndExpression();
+	Expression *equalityExpression();
+	Expression *relationalExpression() ;
+	Expression *additiveExpression();
+	Expression *mutiplicativeExpression();
+	Expression *unaryExpression();
+	Expression *primaryExpression();
+	Expression *functionCall(Identifier *id);
+	Expression *argumentList();
 
 	void nextToken();
 	void match(int tkn_type);
 	void match(string tkn_symbol);
 
 	void error(string expected);
+
+	void treeToXml();
 };
 
 #endif // _SYNTAX_H_
