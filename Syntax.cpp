@@ -536,19 +536,25 @@ void Syntax::nextToken() {
 	}
 }
 
-void Syntax::treeToXml() {
+void Syntax::treeToXml(const char *outfilename) {
 	Node *n = tree;
+	ofstream file(outfilename);
 
-	xml.setoutput(&cout);
+	if (file.is_open()) {
+		xml.setoutput(&file);
+	} else {
+		xml.setoutput(&cout);		
+	}
 
 	xml.openTag("program");
-	
+
 	while (n != NULL) {
 		n->display();
 		n = n->next;
 	}
-
+	
 	xml.closeTag();
+	file.close();
 }
 
 void Syntax::error(string expected) {

@@ -52,7 +52,7 @@ public:
 
 	void error(string expected);
 
-	void treeToXml();
+	void treeToXml(const char *outfilename);
 };
 
 #endif // _SYNTAX_H_

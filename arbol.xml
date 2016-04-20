@@ -1,0 +1,116 @@
+<program>
+    <function-definition>
+        <type>void</type>
+        <id>func_a</id>
+        <parameter-list>
+        </parameter-list>
+        <block>
+            <declaration>
+                <type>int</type>
+                <declarator-list>
+                    <variable-declarator>
+                        <id>x</id>
+                    </variable-declarator>
+                </declarator-list>
+            </declaration>
+            <declaration>
+                <type>int</type>
+                <declarator-list>
+                    <variable-declarator>
+                        <id>y</id>
+                    </variable-declarator>
+                </declarator-list>
+            </declaration>
+            <declaration>
+                <type>int</type>
+                <declarator-list>
+                    <variable-declarator>
+                        <id>a</id>
+                    </variable-declarator>
+                    <variable-declarator>
+                        <id>b</id>
+                    </variable-declarator>
+                </declarator-list>
+            </declaration>
+            <declaration>
+                <type>int</type>
+                <declarator-list>
+                    <variable-declarator>
+                        <id>e</id>
+                        <integer>3</integer>
+                    </variable-declarator>
+                    <variable-declarator>
+                        <id>f</id>
+                    </variable-declarator>
+                    <variable-declarator>
+                        <id>g</id>
+                        <integer>5</integer>
+                    </variable-declarator>
+                    <variable-declarator>
+                        <id>h</id>
+                    </variable-declarator>
+                    <variable-declarator>
+                        <id>i</id>
+                        <integer>6</integer>
+                    </variable-declarator>
+                </declarator-list>
+            </declaration>
+            <binary-expression value="=">
+                <id>e</id>
+                <binary-expression value="+">
+                    <id>g</id>
+                    <integer>4</integer>
+                </binary-expression>
+            </binary-expression>
+            <binary-expression value="=">
+                <id>f</id>
+                <binary-expression value="*">
+                    <id>h</id>
+                    <integer>5</integer>
+                </binary-expression>
+            </binary-expression>
+            <binary-expression value="=">
+                <id>x</id>
+                <binary-expression value="-">
+                    <integer>5</integer>
+                    <integer>6</integer>
+                </binary-expression>
+            </binary-expression>
+            <binary-expression value="=">
+                <id>y</id>
+                <binary-expression value="/">
+                    <integer>200</integer>
+                    <id>e</id>
+                </binary-expression>
+            </binary-expression>
+            <binary-expression value="=">
+                <id>i</id>
+                <binary-expression value="-">
+                    <binary-expression value="+">
+                        <binary-expression value="*">
+                            <integer>4</integer>
+                            <id>x</id>
+                        </binary-expression>
+                        <id>y</id>
+                    </binary-expression>
+                    <integer>3</integer>
+                </binary-expression>
+            </binary-expression>
+            <declaration>
+                <type>int</type>
+                <declarator-list>
+                    <variable-declarator>
+                        <id>r</id>
+                    </variable-declarator>
+                </declarator-list>
+            </declaration>
+            <binary-expression value="=">
+                <id>r</id>
+                <binary-expression value="%">
+                    <id>h</id>
+                    <integer>2</integer>
+                </binary-expression>
+            </binary-expression>
+        </block>
+    </function-definition>
+</program>
