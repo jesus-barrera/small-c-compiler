@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "Syntax.h"
-#include "Lexical.h"
+#include "include/Syntax.h"
+#include "include/Lexical.h"
 
 using namespace std;
 

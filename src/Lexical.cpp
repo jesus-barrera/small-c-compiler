@@ -1,4 +1,4 @@
-#include "Lexical.h"
+#include "../include/Lexical.h"
 
 int moves[NUM_STATES][23] = {
 /*   a-z  0-9  ' '   \n    .   "   +,-   *   %    /    ;    |    &    =   <,>   !    (    )    {    }    ,   EOF    *  */

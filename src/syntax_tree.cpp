@@ -1,4 +1,4 @@
-#include "syntax_tree.h"
+#include "../include/syntax_tree.h"
 
 XMLGenerator xml;
 

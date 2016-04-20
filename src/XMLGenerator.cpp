@@ -1,4 +1,4 @@
-#include "XMLGenerator.h"
+#include "../include/XMLGenerator.h"
 
 void XMLGenerator::setoutput(ostream *output) {
 	this->output = output;

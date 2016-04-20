@@ -1,4 +1,4 @@
-#include "Syntax.h"
+#include "../include/Syntax.h"
  
 Syntax::Syntax(list<Token *> *tkn_stream) {
 	this->tkn_stream = tkn_stream;
