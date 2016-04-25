@@ -1,8 +1,27 @@
+#include <sstream>
 #include "../include/syntax_tree.h"
 
-XMLGenerator xml;
+XMLGenerator Node::xml;
+SymbolsTable Node::symbols;
 
-void displayList(string wrapper_tag, Node*  node) {
+// Node methods
+Node::Node(string symbol) {
+	this->symbol = symbol;
+	this->next = NULL;
+	this->type = TYPE_ERROR;
+}
+
+Node::~Node() {
+	delete(this->next);
+}
+
+void Node::display() {}
+
+void Node::checkSemantic() {
+	this->type = TYPE_ERROR;
+}
+
+void Node::displayList(string wrapper_tag, Node*  node) {
 	xml.openTag(wrapper_tag);
 
 	while (node != NULL) {
@@ -14,18 +33,21 @@ void displayList(string wrapper_tag, Node*  node) {
 	xml.closeTag();
 }
 
-// Node methods
-Node::Node(string symbol) {
-	this->symbol = symbol;
+void Node::checkSemanticOnList(Node* node) {
+	symbols.newContext();
 
-	this->next = NULL;
+	while (node != NULL) {
+		node->checkSemantic();
+		
+		node = node->next;
+	}
+
+	symbols.exitContext();
 }
 
-Node::~Node() {
-	delete(this->next);
+void Node::error(string msg) {
+	cout << "[Error Semantico] " << msg << endl;
 }
-
-void Node::display() {}
 
 // DataType methods
 DataType::DataType(string symbol) 
@@ -33,6 +55,16 @@ DataType::DataType(string symbol)
 
 void DataType::display() {
 	xml.oneLineTag("type", this->symbol);
+}
+
+int DataType::getType() {
+	if (symbol == "int") {
+		return TYPE_INT;
+	} else if (symbol == "void") {
+		return TYPE_VOID;
+	} else {
+		return TYPE_ERROR;
+	}
 }
 
 // Statement methods
@@ -43,13 +75,26 @@ Statement::Statement(string symbol)
 Expression::Expression(string symbol) 
 		: Statement(symbol) {}
 
-// Expression methods
+// Identifier methods
 Identifier::Identifier(string symbol) 
 		: Expression(symbol) {}
 
-// Identifier methods
 void Identifier::display() {
 	xml.oneLineTag("id", this->symbol);
+}
+
+void Identifier::checkSemantic() {
+	SymTabRecord *record = symbols.get(this->symbol);
+
+	if (record) {
+		if (record->sym_type == SYM_VARIABLE) {
+			this->type = record->type;
+		} else {
+			error("Funcion \"" + this->symbol + "\" es usada como variable");
+		}
+	} else {
+		error("Variable no definida: " +  this->symbol);
+	}
 }
 
 // Integer methods
@@ -58,6 +103,10 @@ Integer::Integer(string symbol)
 
 void Integer::display() {
 	xml.oneLineTag("integer", this->symbol);
+}
+
+void Integer::checkSemantic() {
+	this->type = TYPE_INT;
 }
 
 // BinaryExpression methods
@@ -80,6 +129,17 @@ void BinaryExpression::display() {
 	xml.closeTag();
 }
 
+void BinaryExpression::checkSemantic() {
+	this->left->checkSemantic();
+	this->right->checkSemantic();
+
+	if (this->left->type == TYPE_INT && this->right->type == TYPE_INT) {
+		this->type = TYPE_INT;
+	} else {
+		error("Expresion binaria entre tipos no compatibles");
+	}
+}
+
 // UnaryExpression methods
 UnaryExpression::UnaryExpression(string op, Expression* expr)
 		: Expression("") {
@@ -95,6 +155,16 @@ void UnaryExpression::display() {
 	xml.openTag("unary-expression", this->op);
 	this->expr->display();
 	xml.closeTag();
+}
+
+void UnaryExpression::checkSemantic() {
+	this->expr->checkSemantic();
+
+	if (this->expr->type == TYPE_INT) {
+		this->type = this->expr->type;
+	} else {
+		error("El operador unario en expresion void");
+	}
 }
 
 // FunctionCall methods
@@ -114,6 +184,48 @@ void FunctionCall::display() {
 	this->id->display();
 	displayList("argument-list", this->args);
 	xml.closeTag();
+}
+
+void FunctionCall::checkSemantic() {
+	SymTabRecord *func;
+	Param *param;
+	Expression *arg;
+
+	err << "Llamada a funcion \"" << this->id->symbol << "\": ";
+
+	func = symbols.get(this->id->symbol);
+	
+	if (func  != NULL) {
+		identifier = func->symbol;
+
+		// Check symbol is a function identifier
+		if (func->sym_type == SYM_FUNCTION) {
+			param = func->params;
+			arg = this->args;
+
+			// Check arguments match function definition
+			while (arg != NULL && param != NULL) {
+				arg->checkSemantic();
+
+				if (arg->type != param->type) {
+					error("En llamada a funcion \"" + identifier + "\": los tipos de argumentos no coinciden");
+				}
+
+				arg = arg->next;
+				param = param->next;
+			}
+
+			if (arg != NULL || param != NULL) {
+				error("En llamada a funcion \"" + identifier + "\": el numero de parametros no coincide");
+			} else {
+				this->type = func->type;
+			}
+		} else {
+			error("\"" + identifier + "\" no es una funcion");
+		}
+	} else {
+		error("\"" +  identifier + "\" no ha sido declarado");
+	}
 }
 
 // IfStatement methods
@@ -138,6 +250,18 @@ void IfStatement::display() {
 	xml.closeTag();
 }
 
+void IfStatement::checkSemantic() {
+	this->exp->checkSemantic();
+	checkSemanticOnList(this->statement);
+	checkSemanticOnList(this->elseStatement);
+
+	if (this->exp->type != TYPE_INT) {
+		error("Condicion no booleana");
+	} else {
+		this->type = TYPE_VOID;
+	}
+}
+
 // WhileStatement methods
 WhileStatement::WhileStatement(Expression *exp, Statement *statement) 
 		: Statement("") {
@@ -157,6 +281,18 @@ void WhileStatement::display() {
 	xml.closeTag();
 }
 
+void WhileStatement::checkSemantic() {
+	this->exp->checkSemantic();
+
+	checkSemanticOnList(this->statement);
+
+	if (this->exp->type != TYPE_INT) {
+		error("Condicion no booleana");
+	} else {
+		this->type = TYPE_VOID;
+	}
+}
+
 // DoWhileStatement methods
 DoWhileStatement::DoWhileStatement(Statement *statement, Expression *exp)
 		: WhileStatement(exp, statement) {}
@@ -169,19 +305,33 @@ void DoWhileStatement::display() {
 }
 
 // ReturnStatement methods
-ReturnStatement::ReturnStatement(Expression *exp)
+ReturnStatement::ReturnStatement(Expression *expr)
 		: Statement("") {
-	this->exp = exp;
+	this->expr = expr;
 }
 
 ReturnStatement::~ReturnStatement() {
-	delete(this->exp);
+	delete(this->expr);
 }
 
 void ReturnStatement::display() {
 	xml.openTag("return");
-	if (this->exp) this->exp->display();
+	if (this->expr) this->expr->display();
 	xml.closeTag();
+}
+
+void ReturnStatement::checkSemantic() {
+	SymTabRecord *context;
+	
+	context = symbols.getContext();
+
+	if (this->expr) {
+		this->expr->checkSemantic();
+		
+		if (context->type == TYPE_VOID) {
+			error("En funcion " + context->symbol + ": return debe ser void");
+		}
+	}
 }
 
 // ForStatement methods
@@ -209,6 +359,16 @@ void ForStatement::display() {
 	xml.closeTag();
 }
 
+void ForStatement::checkSemantic() {
+	if (this->initializer) this->initializer->checkSemantic();
+	if (this->condition) this->condition->checkSemantic();
+	if (this->step) this->initializer->checkSemantic();
+
+	checkSemanticOnList(this->statement);
+
+	this->type = TYPE_VOID;
+}
+
 // Declarator methods
 Declarator::Declarator(Identifier *id) 
 		: Node("") {
@@ -234,6 +394,19 @@ void VariableDeclarator::display() {
 	this->id->display();
 	if (this->init) this->init->display();
 	xml.closeTag();
+}
+
+void VariableDeclarator::checkSemantic() {
+	
+	if (this->init) {
+		this->init->checkSemantic();
+
+		if (this->init->type != TYPE_INT) {
+			error("Asignacion de tipo no compatible");
+		} else {
+
+		}
+	}
 }
 
 // FunctionDeclarator methods
@@ -274,9 +447,9 @@ void Parameter::display() {
 }
 
 // Declaration methods
-Declaration::Declaration(DataType *type, Declarator *declarator)
+Declaration::Declaration(DataType *data_type, Declarator *declarator)
 		: Statement("") {
-	this->type = type;
+	this->data_type = data_type;
 	this->declarator = declarator;
 }
 
@@ -290,6 +463,21 @@ void Declaration::display() {
 	this->type->display();
 	displayList("declarator-list", this->declarator);
 	xml.closeTag();
+}
+
+void Declaration::checkSemantic() {
+	Declarator *node;
+	int data_type;
+
+	data_type = this->data_type->getType();
+
+	node = this->declarator;
+
+	while (node != NULL) {
+		node->checkSemantic(type);
+
+		node = this->node->next;
+	}
 }
 
 // FunctionDefinition methods

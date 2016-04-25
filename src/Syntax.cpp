@@ -541,19 +541,19 @@ void Syntax::treeToXml(const char *outfilename) {
 	ofstream file(outfilename);
 
 	if (file.is_open()) {
-		xml.setoutput(&file);
+		Node::xml.setoutput(&file);
 	} else {
-		xml.setoutput(&cout);		
+		Node::xml.setoutput(&cout);		
 	}
 
-	xml.openTag("program");
+	Node::xml.openTag("program");
 
 	while (n != NULL) {
 		n->display();
 		n = n->next;
 	}
 	
-	xml.closeTag();
+	Node::xml.closeTag();
 	file.close();
 }
 

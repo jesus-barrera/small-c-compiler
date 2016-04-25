@@ -6,24 +6,34 @@
 #include <string>
 
 #include "XMLGenerator.h"
+#include "SymbolsTable.h"
 
 using namespace std;
 
-extern XMLGenerator xml;
-
 class Node {
+protected:
+	static SymbolsTable symbols;
+	static void error(string msg);
+	static void displayList(string wrapper_tag, Node*  node);
+	static void checkSemanticOnList(Node* node);
 public:
+	static XMLGenerator xml;
+
+	int type;
 	string symbol;
 	Node *next;
 
 	Node(string simbolo);
 	virtual ~Node();
+
 	virtual void display();
+	virtual void checkSemantic();
 };
 
 class DataType: public Node {
 public:
 	DataType(string symbol);
+	int getType();
 
 	void display();
 };
@@ -43,6 +53,7 @@ public:
 	Identifier(string symbol);
 
 	void display();
+	void checkSemantic();
 };
 
 class Integer: public Expression {
@@ -50,6 +61,7 @@ public:
 	Integer(string symbol);
 
 	void display();
+	void checkSemantic();
 };
 
 class BinaryExpression: public Expression {
@@ -62,6 +74,7 @@ public:
 	~BinaryExpression();
 	
 	void display();
+	void checkSemantic();
 };
 
 class UnaryExpression: public Expression {
@@ -73,6 +86,7 @@ public:
 	~UnaryExpression();
 
 	void display();
+	void checkSemantic();
 };
 
 class FunctionCall: public Expression {
@@ -82,7 +96,9 @@ public:
 
 	FunctionCall(Identifier *id, Expression *args);
 	~FunctionCall();
+
 	void display();
+	void checkSemantic();
 };
 
 class IfStatement: public Statement {
@@ -117,9 +133,9 @@ public:
 
 class ReturnStatement: public Statement {
 public:
-	Expression *exp;
+	Expression *expr;
 
-	ReturnStatement(Expression *exp);
+	ReturnStatement(Expression *expr);
 	~ReturnStatement();
 
 	void display();
@@ -154,6 +170,8 @@ public:
 	Identifier *id;
 	Declarator(Identifier *id);
 	~Declarator();
+
+	virtual void checkSemantic(int type);
 };
 
 class VariableDeclarator: public Declarator {
@@ -163,6 +181,7 @@ public:
 	VariableDeclarator(Identifier *id, Expression *initializer);
 	~VariableDeclarator();
 
+	void checkSemantic(int type);
 	void display();
 };
 
@@ -173,15 +192,16 @@ public:
 	FunctionDeclarator(Identifier *id, Parameter *params);
 	~FunctionDeclarator();
 
+	void checkSemantic(int type);
 	void display();
 };
 
 class Declaration: public Statement {
 public:
-	DataType *type;
+	DataType *data_type;
 	Declarator *declarator;
 
-	Declaration(DataType *type, Declarator *declarator);
+	Declaration(DataType *data_type, Declarator *declarator);
 	~Declaration();
 
 	void display();
