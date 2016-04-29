@@ -123,6 +123,7 @@ const char *str_tokens[NUM_TOKENS] = {
 	"TKN_OP_RELATIONAL",
 	"TKN_EOF",
 	"TKN_WHITE_SPACE",
+	"TKN_KEYWORD",
 	"TKN_NOT_VALID"
 };
 
@@ -265,6 +266,10 @@ Token *Lexical::nextToken() {
 		tkn_symbol.append(1, peekChar());
 		error(tkn_symbol);
 	} else {
+		if (tkn_type == TKN_IDENTIFIER && isReservedWord(tkn_symbol)) {
+			tkn_type = TKN_KEYWORD;
+		}
+
 		return new Token(tkn_type, tkn_symbol);
 	}
 }
@@ -272,6 +277,17 @@ Token *Lexical::nextToken() {
 void Lexical::error(string tkn_symbol) {
 	cout << "[Error Lexico] Simbolo no reconocido: '" << tkn_symbol << "'" << endl;
 	throw 0;
+}
+
+
+bool Lexical::isReservedWord(string &identifier) {
+	for (int i = 0; i < 32; i++) {
+		if (identifier == reserved_words[i]) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 list<Token *> *Lexical::scan() {
@@ -292,14 +308,4 @@ void Lexical::flush() {
 
 		tkn_stream.pop_front();
 	}
-}
-
-bool isReservedWord(string &identifier) {
-	for (int i = 0; i < 32; i++) {
-		if (identifier == reserved_words[i]) {
-			return true;
-		}
-	}
-
-	return false;
 }

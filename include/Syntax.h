@@ -52,6 +52,7 @@ public:
 
 	void error(string expected);
 
+	Node *getTree();
 	void treeToXml(const char *outfilename);
 };
 

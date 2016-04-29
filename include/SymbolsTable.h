@@ -4,6 +4,8 @@
 #include <vector>
 #include <string>
 
+#define ANONYM_CONTEXT_MARK "#"
+
 using namespace std;
 
 // Symbol types
@@ -39,18 +41,20 @@ private:
 	vector<SymTabRecord> table;
 	vector<string> curr_context;
 
+	void deleteParams(Param *params);
+
 public:
-	// Insets new symbol to the table
-	int insert(string &symbol, int sym_type, int type, Param *params = NULL);
+	SymbolsTable();
 
-	// Gets the symbol record
-	SymTabRecord get(string &symbol);
-
-	// Sets the current context
-	void setContext(string &context);
-
-	// Exits the current context
+	int insert(string &symbol, int sym_type, int type, Param *params = NULL, bool defined = true);
+	SymTabRecord *get(string &symbol, bool bubble = true);
+	
+	SymTabRecord *getContext();
+	void setContext(string context = "");
 	void exitContext();
+	
+	void display();
+	void clear();
 };
 
 #endif // _SYMBOLS_TABLE_H_INCLUDED_

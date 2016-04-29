@@ -34,6 +34,7 @@ enum {
 	TKN_OP_RELATIONAL,
 	TKN_EOF,
 	TKN_WHITE_SPACE,
+	TKN_KEYWORD,
 	TKN_NOT_VALID, 
 	NUM_TOKENS
 };
@@ -105,8 +106,9 @@ private:
 
 	Token *nextToken();
 
-	void error(string tkn_symbol);
+	bool isReservedWord(string &symbol);
 
+	void error(string tkn_symbol);
 public:
 	Lexical(string file_name);
 	

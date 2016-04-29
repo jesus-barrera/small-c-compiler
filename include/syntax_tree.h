@@ -12,11 +12,12 @@ using namespace std;
 
 class Node {
 protected:
-	static SymbolsTable symbols;
 	static void error(string msg);
 	static void displayList(string wrapper_tag, Node*  node);
-	static void checkSemanticOnList(Node* node);
+	static void checkSemanticOnList(Node* node, bool set_context = true);
+	
 public:
+	static SymbolsTable symtable;
 	static XMLGenerator xml;
 
 	int type;
@@ -40,12 +41,12 @@ public:
 
 class Statement: public Node {
 public:
-	Statement(string symbol);
+	Statement();
 };
 
 class Expression: public Statement {
 public:
-	Expression(string symbol);
+	Expression();
 };
 
 class Identifier: public Expression {
@@ -103,14 +104,15 @@ public:
 
 class IfStatement: public Statement {
 public:
-	Expression *exp;
+	Expression *expr;
 	Statement *statement;
 	Statement *elseStatement;
 
-	IfStatement(Expression *exp, Statement *statement, Statement *elseStatement);
+	IfStatement(Expression *expr, Statement *statement, Statement *elseStatement);
 	~IfStatement();
 
 	void display();
+	void checkSemantic();
 };
 
 class WhileStatement: public Statement {
@@ -122,6 +124,7 @@ public:
 	~WhileStatement();
 
 	void display();
+	void checkSemantic();
 };
 
 class DoWhileStatement: public WhileStatement {
@@ -139,6 +142,7 @@ public:
 	~ReturnStatement();
 
 	void display();
+	void checkSemantic();
 };
 
 class ForStatement: public Statement {
@@ -152,17 +156,19 @@ public:
 	~ForStatement();
 
 	void display();
+	void checkSemantic();
 };
 
 class Parameter: public Node {
 public:
-	DataType *type;
+	DataType *data_type;
 	Identifier *id;
 
-	Parameter(DataType *type, Identifier *id);
+	Parameter(DataType *data_type, Identifier *id);
 	~Parameter();
 
 	void display();
+	void checkSemantic();
 };
 
 class Declarator: public Node {
@@ -181,8 +187,8 @@ public:
 	VariableDeclarator(Identifier *id, Expression *initializer);
 	~VariableDeclarator();
 
-	void checkSemantic(int type);
 	void display();
+	void checkSemantic(int type);
 };
 
 class FunctionDeclarator: public Declarator {
@@ -192,8 +198,8 @@ public:
 	FunctionDeclarator(Identifier *id, Parameter *params);
 	~FunctionDeclarator();
 
-	void checkSemantic(int type);
 	void display();
+	void checkSemantic(int type);
 };
 
 class Declaration: public Statement {
@@ -205,20 +211,22 @@ public:
 	~Declaration();
 
 	void display();
+	void checkSemantic();
 };
 
 class FunctionDefinition: public Node {
 public:
-	DataType *type;
+	DataType *data_type;
 	Identifier *id;
-	Parameter *param;
+	Parameter *params;
 	Statement *statement;
 
 
-	FunctionDefinition(DataType *type, Identifier *Identifier, Parameter *param, Statement *statement);
+	FunctionDefinition(DataType *data_type, Identifier *Identifier, Parameter *params, Statement *statement);
 	~FunctionDefinition();
 
 	void display();
+	void checkSemantic();
 };
 
 #endif

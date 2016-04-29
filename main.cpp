@@ -9,6 +9,7 @@ int main(int argc, char *args[]) {
 	string 	input_file, output_file;
 	Lexical *lex = NULL;
 	Syntax *syntax = NULL;
+	Node *n;
 
 	if (argc >= 2) {
 		input_file  = args[1];		
@@ -26,7 +27,17 @@ int main(int argc, char *args[]) {
 		lex = new Lexical(input_file);
 		syntax = new Syntax(lex->scan());
 		syntax->analyze();
+		n = syntax->getTree();
+
 		syntax->treeToXml(output_file.empty() ? NULL : output_file.c_str());
+		
+		while (n != NULL) {
+			n->checkSemantic();
+
+			n = n->next;
+		}
+
+		syntax->getTree()->symtable.display();
 	} catch (int e) {
 		
 	}

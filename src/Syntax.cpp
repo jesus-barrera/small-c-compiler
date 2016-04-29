@@ -536,6 +536,10 @@ void Syntax::nextToken() {
 	}
 }
 
+Node *Syntax::getTree() {
+	return tree;
+}
+
 void Syntax::treeToXml(const char *outfilename) {
 	Node *n = tree;
 	ofstream file(outfilename);
