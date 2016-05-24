@@ -145,23 +145,6 @@ bool Token::is(string symbol) {
 	return this->symbol == symbol;
 }
 
-Lexical::Lexical(string file_name) {
-	input.open(file_name.c_str());
-
-	if (!input.is_open()) {
-		cout << "No se pudo abrir el archivo de entrada" << endl;
-
-		throw 0;
-	} else {
-		loadBuffer();
-	}
-}
-
-Lexical::~Lexical() {
-	input.close();
-	flush();
-}
-
 void Lexical::loadBuffer() {
 	input.read(buffer, BUFFER_SIZE);
 
@@ -188,7 +171,7 @@ char Lexical::peekChar() {
 	return buffer[buff_pos];
 }
 
-int Lexical::getEntry() {
+int Lexical::getInput() {
 	char c = peekChar();
 
 	if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
@@ -240,45 +223,64 @@ int Lexical::getEntry() {
 	}
 }
 
-Token *Lexical::nextToken() {
+TokenStream *Lexical::analyze(string filename) {
 	char c;
-	int state, next_state, tkn_type;
+
+	int state;
+	int next_state;
+	
+	int tkn_type;
 	string tkn_symbol;
+	
+	TokenStream *tokens;
+    
+    input.open(filename.c_str());
+
+    if (!input.is_open()) {
+        error("No se pudo abrir el archivo: \""  + filename + "\"");
+    }
+
+    tokens = new TokenStream();
+    loadBuffer();
 
 	do {
-		state = Q0;
-		tkn_symbol = "";
+		do {
+			state = Q0;
+			tkn_symbol = "";
 
-		next_state = moves[state][getEntry()];
+			next_state = moves[state][getInput()];
 
-		while (next_state != K) {
-			state = next_state;
+			while (next_state != K) {
+				state = next_state;
+				tkn_symbol.append(1, getChar());
+				next_state = moves[state][getInput()];
+			}
 
-			tkn_symbol.append(1, getChar());
+			tkn_type = actions[state];
+		} while (tkn_type == TKN_WHITE_SPACE);
 
-			next_state = moves[state][getEntry()];
+		if (tkn_type == TKN_NOT_VALID) {
+			tkn_symbol.append(1, peekChar());
+			error("Simbolo no reconocido \"" + tkn_symbol + "\"");
+		} else {
+			if (tkn_type == TKN_IDENTIFIER && isReservedWord(tkn_symbol)) {
+				tkn_type = TKN_KEYWORD;
+			}
+
+			tokens->push_back(new Token(tkn_type, tkn_symbol));
 		}
+	} while (tokens->back()->type != TKN_EOF);
 
-		tkn_type = actions[state];
-	} while (tkn_type == TKN_WHITE_SPACE);
+    input.close();
+    input.clear();
 
-	if (tkn_type == TKN_NOT_VALID) {
-		tkn_symbol.append(1, peekChar());
-		error(tkn_symbol);
-	} else {
-		if (tkn_type == TKN_IDENTIFIER && isReservedWord(tkn_symbol)) {
-			tkn_type = TKN_KEYWORD;
-		}
-
-		return new Token(tkn_type, tkn_symbol);
-	}
+	return tokens;
 }
 
-void Lexical::error(string tkn_symbol) {
-	cout << "[Error Lexico] Simbolo no reconocido: '" << tkn_symbol << "'" << endl;
+void Lexical::error(string msg) {
+	cout << "[Error Lexico] " << msg << endl;
 	throw 0;
 }
-
 
 bool Lexical::isReservedWord(string &identifier) {
 	for (int i = 0; i < 32; i++) {
@@ -290,22 +292,22 @@ bool Lexical::isReservedWord(string &identifier) {
 	return false;
 }
 
-list<Token *> *Lexical::scan() {
-	Token *tkn;
+void Lexical::destroyTokens(TokenStream *tokens) {
+    if (tokens) {
+        while (!tokens->empty()) {
+            delete(tokens->front());
 
-	do {
-		tkn = nextToken();
+            tokens->pop_front();
+        }
 
-		tkn_stream.push_back(tkn);
-	} while (tkn->type != TKN_EOF);
-
-	return &tkn_stream;
+        delete(tokens);
+    }
 }
 
-void Lexical::flush() {
-	while (!tkn_stream.empty()) {
-		delete(tkn_stream.front());
+void Lexical::displayTokens(TokenStream *tokens) {
+    TokenStream::iterator i;
 
-		tkn_stream.pop_front();
-	}
+    for (i = tokens->begin(); i != tokens->end(); ++i) {
+        cout << "<" << str_tokens[(*i)->type] << " " << (*i)->symbol << ">" << endl;
+    }
 }

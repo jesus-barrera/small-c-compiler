@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-#define ANONYM_CONTEXT_MARK "#"
-
 using namespace std;
 
 // Symbol types
@@ -21,34 +19,31 @@ enum {
 	TYPE_ERROR
 };
 
-// Params list
-struct Param {
-	int type;
-	Param *next;
-};
-
 struct SymTabRecord {
 	string symbol;
 	int sym_type;
-	int type;
+	int data_type;
 	string context;
-	Param *params;
+	vector<int> params;
 	bool defined;
 };
+
+typedef vector<int> ParamList;
+
+extern const char *str_data_types[];
+extern const char *str_sym_types[];
 
 class SymbolsTable {
 private:
 	vector<SymTabRecord> table;
 	vector<string> curr_context;
 
-	void deleteParams(Param *params);
-
 public:
 	SymbolsTable();
+	vector<SymTabRecord> *getContainer();
 
-	int insert(string &symbol, int sym_type, int type, Param *params = NULL, bool defined = true);
+	int insert(string &symbol, int sym_type, int data_type, ParamList *params = NULL, bool defined = true, bool use_context = true);
 	SymTabRecord *get(string &symbol, bool bubble = true);
-	
 	SymTabRecord *getContext();
 	void setContext(string context = "");
 	void exitContext();

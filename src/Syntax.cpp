@@ -1,15 +1,18 @@
+#include <cstdlib>
+#include <exception>
+
 #include "../include/Syntax.h"
- 
-Syntax::Syntax(list<Token *> *tkn_stream) {
-	this->tkn_stream = tkn_stream;
-}
 
-void Syntax::analyze() {
+Node* Syntax::analyze(TokenStream *tkn_stream) {
+	Node *tree;
+
+	this->tkn_stream = *tkn_stream;
+
 	nextToken();
-	
 	tree = externalDeclaration();
-
 	match(TKN_EOF);
+
+	return tree;
 }
 
 Node *Syntax::externalDeclaration() {
@@ -106,7 +109,7 @@ Node *Syntax::functionDefinition(DataType *type, Identifier *identifier, Paramet
 	Node *node = NULL;
 
 	if (lookahead.is("{")) {
-		Statement *statement = compoundStatement();
+		Node *statement = compoundStatement();
 
 		node = new FunctionDefinition(type, identifier, param, statement);
 	} else {
@@ -164,12 +167,12 @@ Parameter *Syntax::parameterList() {
 	return node;
 }
 
-Statement *Syntax::statement() {
-	Statement *node = NULL;
+Node *Syntax::statement() {
+	Node *node = NULL;
 
 	if (lookahead.is("if")) {
 		Expression *expr;
-		Statement *stm, *elseStm;
+		Node *stm, *elseStm;
 
 		match("if");
 		match("(");
@@ -181,7 +184,7 @@ Statement *Syntax::statement() {
 		node = new IfStatement(expr, stm, elseStm);
 	} else if (lookahead.is("while")) {
 		Expression *expr;
-		Statement *stm;
+		Node *stm;
 
 		match("while");
 		match("(");
@@ -191,7 +194,7 @@ Statement *Syntax::statement() {
 
 		node = new WhileStatement(expr, stm);
 	} else if (lookahead.is("do")) {
-		Statement *stm;
+		Node *stm;
 		Expression *expr;
 
 		match("do");
@@ -205,7 +208,7 @@ Statement *Syntax::statement() {
 		node = new DoWhileStatement(stm, expr);
 	} else if (lookahead.is("for")) {
 		Expression *initializer, *condition, *step;
-		Statement *stm;
+		Node *stm;
 
 		match("for");
 		match("(");
@@ -246,8 +249,8 @@ Statement *Syntax::statement() {
 	return node;
 }
 
-Statement *Syntax::compoundStatement() {
-	Statement *node = NULL;
+Node *Syntax::compoundStatement() {
+	Node *node = NULL;
 
 	match("{");
 	node = statementList();
@@ -256,8 +259,8 @@ Statement *Syntax::compoundStatement() {
 	return node;
 }
 
-Statement *Syntax::statementList() {
-	Statement *node = NULL;
+Node *Syntax::statementList() {
+	Node *node = NULL;
 
 	if (lookahead.is("if") || 
 		lookahead.is("while") || 
@@ -281,8 +284,8 @@ Statement *Syntax::statementList() {
 	return node;
 }
 
-Statement *Syntax::elseStatement() {
-	Statement *node = NULL;
+Node *Syntax::elseStatement() {
+	Node *node = NULL;
 	if (lookahead.is("else")) {
 		match("else");
 		node = statement();
@@ -325,7 +328,7 @@ Expression *Syntax::assignmentExpression() {
 	Expression *expr = NULL;
 
 	// A second token is taken
-	if (lookahead.is(TKN_IDENTIFIER) && tkn_stream->front()->is("=")) {
+	if (lookahead.is(TKN_IDENTIFIER) && tkn_stream.front()->is("=")) {
 		Identifier *id;
 		Expression *aux;
 		string symbol;
@@ -529,36 +532,11 @@ void Syntax::match(string tkn_symbol) {
 }
 
 void Syntax::nextToken() {
-	if (!tkn_stream->empty()) {
-		lookahead = *(tkn_stream->front());
+	if (!tkn_stream.empty()) {
+		lookahead = *(tkn_stream.front());
 
-		tkn_stream->pop_front();
+		tkn_stream.pop_front();
 	}
-}
-
-Node *Syntax::getTree() {
-	return tree;
-}
-
-void Syntax::treeToXml(const char *outfilename) {
-	Node *n = tree;
-	ofstream file(outfilename);
-
-	if (file.is_open()) {
-		Node::xml.setoutput(&file);
-	} else {
-		Node::xml.setoutput(&cout);		
-	}
-
-	Node::xml.openTag("program");
-
-	while (n != NULL) {
-		n->display();
-		n = n->next;
-	}
-	
-	Node::xml.closeTag();
-	file.close();
 }
 
 void Syntax::error(string expected) {

@@ -1,10 +1,6 @@
 #ifndef _SYNTAX_H_
 #define _SYNTAX_H_
 
-#include <list>
-#include <cstdlib>
-#include <exception>
-
 #include "Lexical.h"
 #include "syntax_tree.h"
 
@@ -12,14 +8,11 @@ using namespace std;
 
 class Syntax {
 private:
-	list<Token *> *tkn_stream;
+	TokenStream tkn_stream;
 	Token lookahead;
-	Node *tree;
 
 public:
-	Syntax(list<Token *> *tkn_stream);
-
-	void analyze();
+	Node *analyze(TokenStream *tkn_stream);
 
 	Node *externalDeclaration();
 	Node *declaration(DataType *type, Identifier *identifier);
@@ -28,10 +21,10 @@ public:
 	Node *functionDefinition(DataType *type, Identifier *identifier, Parameter *param);
 	DataType *typeEspecifier();
 	Parameter *parameterList();
-	Statement *statement();
-	Statement *compoundStatement();
-	Statement *statementList();
-	Statement *elseStatement();
+	Node *statement();
+	Node *compoundStatement();
+	Node *statementList();
+	Node *elseStatement();
 	Expression *expressionOpt();
 	Expression *expression();
 	Expression *assignmentExpression();
@@ -51,9 +44,6 @@ public:
 	void match(string tkn_symbol);
 
 	void error(string expected);
-
-	Node *getTree();
-	void treeToXml(const char *outfilename);
 };
 
 #endif // _SYNTAX_H_
