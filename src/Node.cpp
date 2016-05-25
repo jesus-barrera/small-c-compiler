@@ -1,8 +1,11 @@
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
-#include <fstream>
 
 #include "../include/Node.h"
+
+map<string, int> Node::labels;
+string Node::params_registers[MAX_PARAMS] = {"edi", "esi", "edx", "ecx", "r8", "r9"};
 
 XMLGenerator Node::xml;
 SymbolsTable Node::symtable;
@@ -58,34 +61,20 @@ void Node::generateCode(Node *tree, string filename) {
     Node *node;
     fstream output(filename.c_str(), ios::out);
 
-    output << ";aqui va el codigo" << endl;
+    output << ".data" << endl;
+    generateGlobalVarsCode(output);
 
-    node = tree;
-    
-    while (node) {
-        node->generateCode(output);
-        node = node->next;
-    }
+    output << ".text" << endl;
+    generateCodeOnList(tree, output);
 
-    output << ";aqui termina el codigo" << endl;
+    output << ".end" << endl;
 
     output.close();
 }
 
-void Node::generateGlobalVarsCode(fstream &output) {
-    map<string, SymTabRecord>::iterator it;
-    map<string, SymTabRecord> *table;
-    SymTabRecord *record;
-
-    table = symtable.getContainer();
-
-    for (it = table->begin(); it != table->end(); ++it) {
-        record = &(*it);
-
-        if (record->context.empty() && record->sym_type == SYM_VARIABLE) {
-            output << "."
-        }
-    }
+void Node::error(string msg) {
+    cout << "[Error Semantico] " << msg << endl;
+    throw 0;
 }
 
 void Node::checkSemanticOnList(Node* node, bool set_context) {
@@ -99,7 +88,66 @@ void Node::checkSemanticOnList(Node* node, bool set_context) {
     if (set_context) symtable.exitContext();
 }
 
-void Node::error(string msg) {
-    cout << "[Error Semantico] " << msg << endl;
-    throw 0;
+void Node::generateCodeOnList(Node *node, fstream &output) {
+    while (node) {
+        node->generateCode(output);
+        output << endl;
+
+        node = node->next;
+    }
+}
+
+void Node::generateGlobalVarsCode(fstream &output) {
+    vector<SymTabRecord>::iterator it;
+    vector<SymTabRecord> *table;
+    SymTabRecord *record;
+
+    table = symtable.getContainer();
+
+    for (it = table->begin(); it != table->end(); ++it) {
+        record = &(*it);
+
+        if (record->context.empty() && record->sym_type == SYM_VARIABLE) {
+            output << record->symbol << ":" << endl;
+            output << ".long 0" << endl;
+        }
+    }
+}
+
+string Node::generateUniqueLabel(string label) {
+    stringstream unique_label;
+
+    if (labels.count(label)) {
+        labels[label] ++;
+    } else {
+        labels[label] = 0;
+    }
+    
+    unique_label << label << labels[label];
+    
+    return unique_label.str();
+}
+
+int Node::countLocalFunctionVariables(string function_id) {
+    vector<SymTabRecord>::iterator record_it;
+    vector<SymTabRecord> *table;
+    SymTabRecord *record;
+    int total_vars;
+    string anonym_context_prefix;
+
+    total_vars = 0;
+    anonym_context_prefix = "@" + function_id + "#";
+
+    table = symtable.getContainer();
+
+    for (record_it = table->begin(); record_it != table->end(); ++record_it) {
+        record = &(*record_it);
+
+        if ((record->context == function_id || record->context.find(anonym_context_prefix) == 0) &&
+            record->sym_type == SYM_VARIABLE) {
+            total_vars++;        
+        }
+    }
+
+    return total_vars;
 }

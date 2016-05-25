@@ -2,16 +2,28 @@
 #define _NODE_H_INCLUDED_
 
 #include <string>
+#include <map>
+#include <fstream>
 
 #include "XMLGenerator.h"
 #include "SymbolsTable.h"
 
 using namespace std;
 
+#define MAX_PARAMS 6
+
 class Node {
 protected:
+	static map<string, int> labels;
+	static string params_registers[MAX_PARAMS];
+
 	static void error(string msg);
-	
+	static void checkSemanticOnList(Node* node, bool set_context = true);
+	static void generateCodeOnList(Node* node, fstream &output);
+	static void generateGlobalVarsCode(fstream &output);
+	static string generateUniqueLabel(string label);
+	static int countLocalFunctionVariables(string function_id);
+
 public:
 	static SymbolsTable symtable;
 	static XMLGenerator xml;
@@ -29,7 +41,6 @@ public:
 
 	static void checkSemantic(Node *tree);
 	static void generateCode(Node *tree, string filename);
-	static void checkSemanticOnList(Node* node, bool set_context = true);
 	static void displayList(string wrapper_tag, Node*  node);
 };
 

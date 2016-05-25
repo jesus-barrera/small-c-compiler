@@ -84,3 +84,37 @@ void FunctionDefinition::checkSemantic() {
 
     symtable.exitContext();
 }
+
+void FunctionDefinition::generateCode(fstream &output) {
+    string identifier;
+    int local_vars;
+    SymTabRecord *function_def;
+
+    identifier = this->id->symbol;
+    function_def = symtable.get(identifier);
+    local_vars = Node::countLocalFunctionVariables(identifier);
+
+    output << "; DEFINICION DE FUNCION" << endl;
+    output << ".global " << identifier << endl;
+    output << ".type " << identifier << ",  @function" << endl;
+    output << identifier << ": " << endl;
+    
+    output << "; Prologo" << endl;
+    output << "pushq %rbp" << endl;
+    output << "movq %rsp, %rbp" << endl;
+    output << "subq $" << local_vars * 4 << ", %rsp" << endl;
+    output << "andq $-16, %rsp" << endl;
+
+    // Copy parameters
+    for (int i = 0, j = function_def->params.size();  i < j; i++) {
+        output << "movl %" << Node::params_registers[i] << ", -" << (i + 1) * 4 << "(%rbp)" << endl; 
+    }
+
+    output << "; Cuerpo" << endl;
+    generateCodeOnList(this->statement, output);
+
+    output << "; Epilogo" << endl;
+    output << "movq %rbp, %rsp" << endl;
+    output << "pop %rbp" << endl;
+    output << "ret" << endl;
+}
