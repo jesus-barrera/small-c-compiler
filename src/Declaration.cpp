@@ -33,3 +33,7 @@ void Declaration::checkSemantic() {
         node = (Declarator *)node->next;
     }
 }
+
+void Declaration::generateCode(fstream &output) {
+    Node::generateCodeOnList(this->declarator, output);
+}

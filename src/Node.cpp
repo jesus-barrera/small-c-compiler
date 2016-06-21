@@ -5,7 +5,8 @@
 #include "../include/Node.h"
 
 map<string, int> Node::labels;
-string Node::params_registers[MAX_PARAMS] = {"edi", "esi", "edx", "ecx", "r8", "r9"};
+string Node::params_registers[MAX_PARAMS]        = {"edi", "esi", "edx", "ecx", "r8d", "r9d"};
+string Node::available_registres[AVAILABLE_REGS] = {"rbx", "r10", "r11", "r12", "r13", "r14", "r15"};
 
 XMLGenerator Node::xml;
 SymbolsTable Node::symtable;
@@ -63,6 +64,7 @@ void Node::generateCode(Node *tree, string filename) {
 
     output << ".data" << endl;
     generateGlobalVarsCode(output);
+    cout << endl;
 
     output << ".text" << endl;
     generateCodeOnList(tree, output);
@@ -91,8 +93,6 @@ void Node::checkSemanticOnList(Node* node, bool set_context) {
 void Node::generateCodeOnList(Node *node, fstream &output) {
     while (node) {
         node->generateCode(output);
-        output << endl;
-
         node = node->next;
     }
 }
@@ -145,9 +145,29 @@ int Node::countLocalFunctionVariables(string function_id) {
 
         if ((record->context == function_id || record->context.find(anonym_context_prefix) == 0) &&
             record->sym_type == SYM_VARIABLE) {
-            total_vars++;        
+            total_vars++;
+
+            record->stack_offset = total_vars * 4;        
         }
     }
 
     return total_vars;
+}
+
+string Node::conditionalJump(string op) {
+    if (op == ">") {
+        return "jg";
+    } else if (op == "<") {
+        return "jl";
+    } else if (op == ">=") {
+        return "jge";
+    } else if (op == "<=") {
+        return "jle";
+    } else if (op == "==") {
+        return "je";
+    } else if (op == "!=") {
+        return "jne";
+    } else {
+        return "";
+    }
 }

@@ -32,3 +32,21 @@ void IfStatement::checkSemantic() {
         this->type = TYPE_VOID;
     }
 }
+
+void IfStatement::generateCode(fstream &output) {
+    string end_label, else_label;
+
+    else_label = generateUniqueLabel("ELSE_IF");
+    end_label = generateUniqueLabel("FIN_IF");
+    
+    output << "; SENTENCIA IF"  << endl;
+
+    this->expr->generateCode(output);
+    output << "cmpl $0, %eax" << endl;
+    output << "je " << else_label << endl;
+    generateCodeOnList(this->statement, output);
+    output << "jmp " << end_label << endl;
+    output << else_label << ": " << endl;
+    generateCodeOnList(this->elseStatement, output);
+    output << end_label << ": " << endl;
+}

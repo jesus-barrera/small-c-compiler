@@ -13,6 +13,7 @@ public:
 
 	void display();
 	void checkSemantic(int type);
+	void generateCode(fstream &output);
 };
 
 #endif

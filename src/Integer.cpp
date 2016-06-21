@@ -11,3 +11,7 @@ void Integer::display() {
 void Integer::checkSemantic() {
     this->type = TYPE_INT;
 }
+
+void Integer::generateCode(fstream &output) {
+	output << "movl $" << this->symbol << ", %eax" << endl;
+}

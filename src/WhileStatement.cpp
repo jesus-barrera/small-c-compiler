@@ -29,3 +29,20 @@ void WhileStatement::checkSemantic() {
         this->type = TYPE_VOID;
     }
 }
+
+void WhileStatement::generateCode(fstream &output) {
+    string while_label, end_label;
+
+    while_label = generateUniqueLabel("WHILE");
+    end_label   = generateUniqueLabel("FIN_WHILE");
+
+    output << "; SENTENCIA WHILE" << endl;
+
+    output << while_label << ": " << endl;
+    this->expr->generateCode(output);
+    output << "cmpl %eax, $0" << endl;
+    output << "je " << end_label << endl;
+    generateCodeOnList(this->statement, output);
+    output << "jmp " << while_label << endl;
+    output << end_label << ": " << endl;
+}

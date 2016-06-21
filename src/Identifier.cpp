@@ -23,5 +23,13 @@ void Identifier::checkSemantic() {
 }
 
 void Identifier::generateCode(fstream &output) {
-    
+    SymTabRecord *record;
+
+    record = symtable.get(this->symbol);
+
+    if (record->stack_offset) {
+        output << "movl -" << record->stack_offset << "(%rbp)" << ", %eax" << endl;
+    } else {
+        output << "movl " << record->symbol << ", %eax" << endl;
+    }
 }

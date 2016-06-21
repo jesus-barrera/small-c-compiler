@@ -25,6 +25,7 @@ struct SymTabRecord {
 	int data_type;
 	string context;
 	vector<int> params;
+	int stack_offset;
 	bool defined;
 };
 

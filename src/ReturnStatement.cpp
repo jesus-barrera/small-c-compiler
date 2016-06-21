@@ -30,3 +30,11 @@ void ReturnStatement::checkSemantic() {
 
     this->type = TYPE_VOID;
 }
+
+void ReturnStatement::generateCode(fstream &output) {
+    SymTabRecord *context = symtable.getContext();
+
+    if (this->expr) this->expr->generateCode(output);
+
+    output << "jmp FIN_" << context->symbol << endl;
+}

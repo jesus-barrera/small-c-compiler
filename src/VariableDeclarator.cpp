@@ -39,3 +39,15 @@ void VariableDeclarator::checkSemantic(int type) {
     symtable.insert(this->id->symbol, SYM_VARIABLE, type, NULL);
     this->type = TYPE_VOID;
 }
+
+void VariableDeclarator::generateCode(fstream &output) {
+    SymTabRecord *record;
+    
+    if (symtable.getContext() && this->init) {
+        this->init->generateCode(output);
+
+        record = symtable.get(this->id->symbol);
+
+        output << "movl %eax, " << "-" << record->stack_offset << "(%rbp)" << endl;
+    }
+}

@@ -11,11 +11,13 @@
 using namespace std;
 
 #define MAX_PARAMS 6
+#define AVAILABLE_REGS 7
 
 class Node {
 protected:
 	static map<string, int> labels;
 	static string params_registers[MAX_PARAMS];
+	static string available_registres[AVAILABLE_REGS];
 
 	static void error(string msg);
 	static void checkSemanticOnList(Node* node, bool set_context = true);
@@ -23,6 +25,7 @@ protected:
 	static void generateGlobalVarsCode(fstream &output);
 	static string generateUniqueLabel(string label);
 	static int countLocalFunctionVariables(string function_id);
+	static string conditionalJump(string op);
 
 public:
 	static SymbolsTable symtable;

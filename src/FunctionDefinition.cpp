@@ -111,10 +111,14 @@ void FunctionDefinition::generateCode(fstream &output) {
     }
 
     output << "; Cuerpo" << endl;
+    symtable.setContext(identifier);
     generateCodeOnList(this->statement, output);
+    symtable.exitContext();
 
     output << "; Epilogo" << endl;
+    output << "FIN_" << this->id->symbol << ": " << endl;
     output << "movq %rbp, %rsp" << endl;
-    output << "pop %rbp" << endl;
+    output << "popq %rbp" << endl;
     output << "ret" << endl;
+    output << "; FIN DEFINICION DE FUNCION" << endl;
 }

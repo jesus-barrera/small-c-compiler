@@ -38,3 +38,22 @@ void ForStatement::checkSemantic() {
 
     this->type = TYPE_VOID;
 }
+
+void ForStatement::generateCode(fstream &output) {
+    string for_label, end_label;
+
+    for_label = generateUniqueLabel("FOR");
+    end_label   = generateUniqueLabel("FIN_FOR");
+
+    output << "; SENTENCIA FOR" << endl;
+
+    if (this->initializer) this->initializer->generateCode(output);
+    output << for_label << ": " << endl;
+    if (this->condition) this->condition->generateCode(output);
+    output << "cmpl %eax, $0" << endl;
+    output << "je " << end_label << endl;
+    generateCodeOnList(this->statement, output);
+    if (this->step) this->step->generateCode(output);
+    output << "jmp " << for_label << endl;
+    output << end_label << ": " << endl;
+}

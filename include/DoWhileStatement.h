@@ -8,6 +8,7 @@ public:
 	DoWhileStatement(Node *statement, Expression *expr);
 
 	void display();
+	void generateCode(fstream &output);
 };
 
 #endif

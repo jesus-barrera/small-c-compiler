@@ -15,6 +15,7 @@ public:
 
 	void display();
 	void checkSemantic();
+	void generateCode(fstream &output);
 };
 
 #endif

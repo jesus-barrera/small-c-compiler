@@ -28,3 +28,61 @@ void BinaryExpression::checkSemantic() {
         error("Expresion binaria (" + op + ") entre tipos no compatibles");
     }
 }
+
+void BinaryExpression::generateCode(fstream &output) {
+    if (this->op == "=") {
+        SymTabRecord *record;
+        this->right->generateCode(output);
+
+        record = symtable.get(this->left->symbol);
+
+        output << "movl %eax, " << "-" << record->stack_offset << "(%rbp)" << endl;
+    } else {
+        this->left->generateCode(output);
+        output << "movl %eax, %ebx" << endl;
+        this->right->generateCode(output);
+
+
+        if (this->op == "==" || this->op == "!=" ||
+            this->op == ">"  || this->op == "<"  ||
+            this->op == ">="  || this->op == "<=") {
+
+            string true_label, end_label;
+
+            true_label  = generateUniqueLabel("VERDADERO");
+            end_label   = generateUniqueLabel("FIN");
+
+            output << "; EXPRESION IGUALDAD" << endl;
+
+            output << "cmpl %ebx, %eax" << endl;
+
+            output << conditionalJump(this->op) << " " << true_label << endl;
+            output << "movl $1, %eax" << endl;
+            output << "jmp " << end_label << endl;
+            output << true_label << ": " << endl;
+            output << "movl $0, %eax" << endl;
+            output << end_label << ": " << endl;
+
+        } else if (this->op == "-" || this->op == "+") {
+            output << "; EXPRESION ADDITIVA" << endl;
+    
+            if (this->op == "+") {
+                output << "addl %ebx, %eax" << endl;
+            } else if (this->op == "-") {
+                output << "subl %ebx, %eax" << endl;
+            }
+        } else if (this->op == "*" || this->op == "/" || this->op == "%") {
+            if (this->op == "*") {
+                output << "imul %ebx" << endl;
+
+            } else if (this->op == "/" || this->op == "%") {
+                output << "xorl %edx, %edx" << endl;
+                output << "idivl %ebx" << endl;
+
+                if (this->op == "%") {
+                    output << "movl %edx, %eax" << endl;
+                }
+            }
+        }
+    }
+}

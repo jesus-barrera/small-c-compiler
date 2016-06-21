@@ -24,3 +24,13 @@ void UnaryExpression::checkSemantic() {
         error("Operador unario (" + this->op + ") sobre expresion tipo" + str_data_types[this->expr->type]);
     }
 }
+
+void UnaryExpression::generateCode(fstream &output) {
+    output << "; EXPRESION UNARIA" << endl;
+
+    this->expr->generateCode(output);
+
+    if (this->op == "-") {
+        output << "negl %eax" << endl;
+    }
+}
